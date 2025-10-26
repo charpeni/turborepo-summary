@@ -33,6 +33,9 @@ npx turborepo-summary .turbo/runs/[hash].json
 
 ## Usage
 
+> [!TIP]
+> If you are looking to generate a markdown report from Turborepo running on GitHub Actions, check this GitHub Action that does it for you: [turborepo-summary-action](https://github.com/charpeni/turborepo-summary-action)
+
 First, generate a Turborepo run summary JSON file by running any turbo command with the `--summarize` flag:
 
 ```bash
@@ -46,9 +49,6 @@ Then, generate a markdown report from that JSON file:
 ```bash
 npx turborepo-summary .turbo/runs/[hash].json
 ```
-
-> [!TIP]
-> If you are looking to generate a markdown report from Turborepo running on GitHub Actions, check this GitHub Action that does it for you: [turborepo-summary-action](https://github.com/charpeni/turborepo-summary-action)
 
 > [!TIP]
 > Running this CLI generates a markdown report, then you can view it at your convenience:

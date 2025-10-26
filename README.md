@@ -1,12 +1,18 @@
 # Turborepo Summary
 
-<img height="100" src="" alt="library's logo" align="right">
+<img height="75" src="https://github.com/user-attachments/assets/2cf6fb07-8ce6-4cf5-bb67-d1c54a01ef29" alt="library's logo" align="right">
 
 [![Version](https://badge.fury.io/js/turborepo-summary.svg)](https://www.npmjs.org/package/turborepo-summary)
 [![Monthly Downloads](https://img.shields.io/npm/dm/turborepo-summary)](https://www.npmjs.org/package/turborepo-summary)
 [![GitHub License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/charpeni/turborepo-summary/blob/main/LICENSE)
 
 Generate human-readable markdown reports from [Turborepo](https://turborepo.com/) run summary JSON output.
+
+<br />
+
+<p align="center">
+  <img height="800" alt="Example" src="https://github.com/user-attachments/assets/f870a9c5-5eb3-4902-a1a1-729831852f10" />
+</p>
 
 <hr />
 

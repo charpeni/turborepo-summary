@@ -1,6 +1,6 @@
 {
   "name": "turborepo-summary",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Generate a human-readable summary report from Turborepo run summary JSON output",
   "keywords": [
     "turborepo",

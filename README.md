@@ -8,9 +8,9 @@
 
 Generate human-readable markdown reports from [Turborepo](https://turborepo.com/) run summary JSON output.
 
-<br />
+<hr />
 
-Turborepo offers a flag [(`--summarize`)](https://turborepo.com/docs/reference/run#--summarize) that generates a JSON file in `.turbo/runs` containing metadata about the run, including:
+Turborepo offers a flag ([`--summarize`](https://turborepo.com/docs/reference/run#--summarize)) that generates a JSON file in `.turbo/runs` containing metadata about the run, including:
 
 - Affected packages
 - Executed tasks (including their timings and hashes)

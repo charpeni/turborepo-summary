@@ -1,0 +1,271 @@
+{
+  "id": "34QX2RXsEpW3dYxMhijbL2yNKJY",
+  "version": "1",
+  "turboVersion": "2.5.8",
+  "monorepo": true,
+  "globalCacheInputs": {
+    "rootKey": "I can’t see ya, but I know you’re here",
+    "files": {},
+    "hashOfExternalDependencies": "e5807f117518e1fb",
+    "hashOfInternalDependencies": "",
+    "environmentVariables": {
+      "specified": {
+        "env": [],
+        "passThroughEnv": null
+      },
+      "configured": [],
+      "inferred": [],
+      "passthrough": null
+    },
+    "engines": {
+      "node": ">=18"
+    }
+  },
+  "execution": {
+    "command": "turbo run check-types",
+    "repoPath": "",
+    "success": 0,
+    "failed": 0,
+    "cached": 3,
+    "attempted": 3,
+    "startTime": 1761146560943,
+    "endTime": 1761146561026,
+    "exitCode": 0
+  },
+  "packages": [
+    "@repo/eslint-config",
+    "@repo/typescript-config",
+    "@repo/ui",
+    "docs",
+    "web"
+  ],
+  "envMode": "strict",
+  "frameworkInference": true,
+  "tasks": [
+    {
+      "taskId": "@repo/ui#check-types",
+      "task": "check-types",
+      "package": "@repo/ui",
+      "hash": "b6bb1f083630f063",
+      "inputs": {
+        "eslint.config.mjs": "19170f88edaf8893fdc80d2c616c081f2d838861",
+        "package.json": "c820347d203fac3d8a6f313e87e4f11888863821",
+        "src/button.tsx": "78e5420c3f606fcc5959ef45cf9c930148d1ec73",
+        "src/card.tsx": "7b988937b9a1d98eca18d2b87fdba837a4fe3dd0",
+        "src/code.tsx": "f7cbd22a8618fcb6dca4341cc15dccfb48c0e74d",
+        "tsconfig.json": "ca86687c4bb77d8aed541bc31f9e81156880764a"
+      },
+      "hashOfExternalDependencies": "4832a154da2aa18b",
+      "cache": {
+        "local": true,
+        "remote": false,
+        "status": "HIT",
+        "source": "LOCAL",
+        "timeSaved": 0
+      },
+      "command": "tsc --noEmit",
+      "cliArguments": [],
+      "outputs": null,
+      "excludedOutputs": null,
+      "logFile": "packages/ui/.turbo/turbo-check-types.log",
+      "directory": "packages/ui",
+      "dependencies": [
+        "@repo/eslint-config#check-types",
+        "@repo/typescript-config#check-types"
+      ],
+      "dependents": ["docs#check-types", "web#check-types"],
+      "with": [],
+      "resolvedTaskDefinition": {
+        "outputs": [],
+        "cache": true,
+        "dependsOn": ["^check-types"],
+        "inputs": [],
+        "outputLogs": "full",
+        "persistent": false,
+        "interruptible": false,
+        "env": [],
+        "passThroughEnv": null,
+        "interactive": false
+      },
+      "expandedOutputs": [],
+      "framework": "",
+      "envMode": "strict",
+      "environmentVariables": {
+        "specified": {
+          "env": [],
+          "passThroughEnv": null
+        },
+        "configured": [],
+        "inferred": [],
+        "passthrough": null
+      },
+      "execution": {
+        "startTime": 1761146561000,
+        "endTime": 1761146561012,
+        "exitCode": 0
+      }
+    },
+    {
+      "taskId": "docs#check-types",
+      "task": "check-types",
+      "package": "docs",
+      "hash": "b576801632ad483c",
+      "inputs": {
+        ".gitignore": "f886745c5216623d70058427ddd40ecf6ebf84f7",
+        "README.md": "a98bfa8140e14c75a3675f1666a6f587d4d25fe5",
+        "app/favicon.ico": "718d6fea4835ec2d246af9800eddb7ffb276240c",
+        "app/fonts/GeistMonoVF.woff": "f2ae185cbfd16946a534d819e9eb03924abbcc49",
+        "app/fonts/GeistVF.woff": "1b62daacff96dad6584e71cd962051b82957c313",
+        "app/globals.css": "6af7ecbbb8656b1295acccd1b6cdd1da88d6c855",
+        "app/layout.tsx": "8469537555ad68b14377be257758ab1876d3ff5b",
+        "app/page.module.css": "3630662c6f3119c94bea5a7fdeb98d99df322f2f",
+        "app/page.tsx": "e726335a89cff289eab34248f5aacab1fa6e6523",
+        "eslint.config.js": "47b0670b132933008b2e81120476aa900f03b170",
+        "next.config.js": "4678774e6d606704bce1897a5dab960cd798bf66",
+        "package.json": "a9c661cb7961bf71d710d101b9d96c551c1e3f3b",
+        "public/file-text.svg": "9cfb3c98674c3553ae58854c31f9302cc1f72a24",
+        "public/globe.svg": "4230a3d2071c406b7e4c7b297d247fc194be540c",
+        "public/next.svg": "5174b28c565c285e3e312ec5178be64fbeca8398",
+        "public/turborepo-dark.svg": "dae38fed549745d94f3380a9280864ae0f797c1f",
+        "public/turborepo-light.svg": "ddea915815874759a0cd6dd54dbd197b874c3c99",
+        "public/vercel.svg": "0164ddc5ad9db8a097651e72e9fe9c9caf6e394a",
+        "public/window.svg": "bbc780069c332dbf9b048a30e7d1f5358921c534",
+        "tsconfig.json": "7aef056980d5671f71555aa0fe6abd88f6be8305"
+      },
+      "hashOfExternalDependencies": "1814afc0d83c6c37",
+      "cache": {
+        "local": true,
+        "remote": false,
+        "status": "HIT",
+        "source": "LOCAL",
+        "timeSaved": 0
+      },
+      "command": "tsc --noEmit",
+      "cliArguments": [],
+      "outputs": null,
+      "excludedOutputs": null,
+      "logFile": "apps/docs/.turbo/turbo-check-types.log",
+      "directory": "apps/docs",
+      "dependencies": [
+        "@repo/eslint-config#check-types",
+        "@repo/typescript-config#check-types",
+        "@repo/ui#check-types"
+      ],
+      "dependents": [],
+      "with": [],
+      "resolvedTaskDefinition": {
+        "outputs": [],
+        "cache": true,
+        "dependsOn": ["^check-types"],
+        "inputs": [],
+        "outputLogs": "full",
+        "persistent": false,
+        "interruptible": false,
+        "env": [],
+        "passThroughEnv": null,
+        "interactive": false
+      },
+      "expandedOutputs": [],
+      "framework": "nextjs",
+      "envMode": "strict",
+      "environmentVariables": {
+        "specified": {
+          "env": [],
+          "passThroughEnv": null
+        },
+        "configured": [],
+        "inferred": [],
+        "passthrough": null
+      },
+      "execution": {
+        "startTime": 1761146561014,
+        "endTime": 1761146561026,
+        "exitCode": 0
+      }
+    },
+    {
+      "taskId": "web#check-types",
+      "task": "check-types",
+      "package": "web",
+      "hash": "36f44177ae06dacd",
+      "inputs": {
+        ".gitignore": "f886745c5216623d70058427ddd40ecf6ebf84f7",
+        "README.md": "a98bfa8140e14c75a3675f1666a6f587d4d25fe5",
+        "app/favicon.ico": "718d6fea4835ec2d246af9800eddb7ffb276240c",
+        "app/fonts/GeistMonoVF.woff": "f2ae185cbfd16946a534d819e9eb03924abbcc49",
+        "app/fonts/GeistVF.woff": "1b62daacff96dad6584e71cd962051b82957c313",
+        "app/globals.css": "6af7ecbbb8656b1295acccd1b6cdd1da88d6c855",
+        "app/layout.tsx": "8469537555ad68b14377be257758ab1876d3ff5b",
+        "app/page.module.css": "3630662c6f3119c94bea5a7fdeb98d99df322f2f",
+        "app/page.tsx": "1fee7e2739aef0c555719205bc7300900a7d0da8",
+        "eslint.config.js": "47b0670b132933008b2e81120476aa900f03b170",
+        "next.config.js": "4678774e6d606704bce1897a5dab960cd798bf66",
+        "package.json": "f4305ad541982242156ce40ec2c0e4d4d5069c36",
+        "public/file-text.svg": "9cfb3c98674c3553ae58854c31f9302cc1f72a24",
+        "public/globe.svg": "4230a3d2071c406b7e4c7b297d247fc194be540c",
+        "public/next.svg": "5174b28c565c285e3e312ec5178be64fbeca8398",
+        "public/turborepo-dark.svg": "dae38fed549745d94f3380a9280864ae0f797c1f",
+        "public/turborepo-light.svg": "ddea915815874759a0cd6dd54dbd197b874c3c99",
+        "public/vercel.svg": "0164ddc5ad9db8a097651e72e9fe9c9caf6e394a",
+        "public/window.svg": "bbc780069c332dbf9b048a30e7d1f5358921c534",
+        "tsconfig.json": "7aef056980d5671f71555aa0fe6abd88f6be8305"
+      },
+      "hashOfExternalDependencies": "1814afc0d83c6c37",
+      "cache": {
+        "local": true,
+        "remote": false,
+        "status": "HIT",
+        "source": "LOCAL",
+        "timeSaved": 0
+      },
+      "command": "tsc --noEmit",
+      "cliArguments": [],
+      "outputs": null,
+      "excludedOutputs": null,
+      "logFile": "apps/web/.turbo/turbo-check-types.log",
+      "directory": "apps/web",
+      "dependencies": [
+        "@repo/eslint-config#check-types",
+        "@repo/typescript-config#check-types",
+        "@repo/ui#check-types"
+      ],
+      "dependents": [],
+      "with": [],
+      "resolvedTaskDefinition": {
+        "outputs": [],
+        "cache": true,
+        "dependsOn": ["^check-types"],
+        "inputs": [],
+        "outputLogs": "full",
+        "persistent": false,
+        "interruptible": false,
+        "env": [],
+        "passThroughEnv": null,
+        "interactive": false
+      },
+      "expandedOutputs": [],
+      "framework": "nextjs",
+      "envMode": "strict",
+      "environmentVariables": {
+        "specified": {
+          "env": [],
+          "passThroughEnv": null
+        },
+        "configured": [],
+        "inferred": [],
+        "passthrough": null
+      },
+      "execution": {
+        "startTime": 1761146561013,
+        "endTime": 1761146561026,
+        "exitCode": 0
+      }
+    }
+  ],
+  "user": "",
+  "scm": {
+    "type": "git",
+    "sha": "54ce7b1cdbd168eb956fc5d85ab2043a8feee3d8",
+    "branch": "main"
+  }
+}

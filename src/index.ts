@@ -97,7 +97,8 @@ function generateReport(jsonFile: string) {
     const duration = execution.endTime - execution.startTime;
     const statusIcon = execution.exitCode === 0 ? '✓' : '✗';
     const cacheIcon = cache.status === 'HIT' ? 'cached' : 'miss';
-    const safeName = `${taskId} ${duration}ms ${cacheIcon} ${statusIcon}`;
+    const escapedTaskId = taskId.replaceAll(':', '#58;');
+    const safeName = `${escapedTaskId} ${duration}ms ${cacheIcon} ${statusIcon}`;
 
     console.log(
       `    ${safeName} : ${execution.startTime}, ${execution.endTime}`,

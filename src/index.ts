@@ -24,6 +24,16 @@ export type TurboRunData = {
 export function generateMarkdown(data: TurboRunData): string {
   const { tasks, execution } = data;
 
+  if (tasks.length === 0) {
+    return [
+      '# 🔍 Turbo Run Report',
+      '',
+      `> **Command:** \`${execution.command || 'unknown'}\``,
+      '',
+      '_No tasks found in this summary (this can happen with `--filter` matching nothing)._',
+    ].join('\n');
+  }
+
   const isRan = (task: TurboTask): task is RanTask => task.execution != null;
   const ranTasks = tasks.filter(isRan);
 

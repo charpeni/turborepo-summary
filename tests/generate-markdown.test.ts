@@ -77,4 +77,17 @@ describe('generateMarkdown', () => {
     expect(markdown).toContain('web#build');
     expect(markdown).toContain('Not run');
   });
+
+  it('handles an empty tasks array explicitly instead of a garbage report', () => {
+    const data = {
+      execution: { command: 'turbo run build --filter=nothing' },
+      tasks: [],
+    } as unknown as TurboRunData;
+
+    const markdown = generateMarkdown(data);
+
+    expect(markdown).toContain('No tasks');
+    expect(markdown).not.toContain('Infinity');
+    expect(markdown).not.toContain('NaN');
+  });
 });

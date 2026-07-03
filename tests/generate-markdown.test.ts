@@ -40,9 +40,9 @@ describe('generateMarkdown', () => {
          dateFormat x
          axisFormat %S.%L
          section Tasks
-         @repo/ui#check-types 12ms cached ✓ : 1761146561000, 1761146561012
-         web#check-types 13ms cached ✓ : 1761146561013, 1761146561026
-         docs#check-types 12ms cached ✓ : 1761146561014, 1761146561026
+         @repo/ui#35;check-types 12ms cached ✓ : 1761146561000, 1761146561012
+         web#35;check-types 13ms cached ✓ : 1761146561013, 1761146561026
+         docs#35;check-types 12ms cached ✓ : 1761146561014, 1761146561026
      \`\`\`
 
      ## 📋 Detailed Results
@@ -125,5 +125,28 @@ describe('generateMarkdown', () => {
     expect(markdown).toContain('| **Failed** | ✗ 1 |');
     // a failed task surfaces its execution.error
     expect(markdown).toContain('build failed');
+  });
+
+  it('escapes Mermaid-breaking characters in task ids', () => {
+    const data = {
+      execution: { command: 'turbo run build' },
+      tasks: [
+        {
+          taskId: 'web,shared#build',
+          cache: { status: 'MISS' },
+          execution: { startTime: 1000, endTime: 2000, exitCode: 0 },
+        },
+      ],
+    } as unknown as TurboRunData;
+
+    const markdown = generateMarkdown(data);
+
+    // a comma in the name is escaped (a raw comma breaks gantt parsing)
+    expect(markdown).toContain('#44;');
+    // hashes are escaped too
+    expect(markdown).toContain('#35;');
+    // emitted entities must not be re-escaped
+    expect(markdown).not.toContain('#35;44;');
+    expect(markdown).not.toContain('#35;35;');
   });
 });

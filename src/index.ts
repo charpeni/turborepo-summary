@@ -22,6 +22,15 @@ export type TurboRunData = {
   };
 };
 
+function escapeMermaid(text: string): string {
+  // Escape '#' before ':' and ',' so the '#' in the emitted entities
+  // (#58;, #44;, #35;) is not itself re-escaped.
+  return text
+    .replaceAll('#', '#35;')
+    .replaceAll(':', '#58;')
+    .replaceAll(',', '#44;');
+}
+
 export function generateMarkdown(data: TurboRunData): string {
   const { tasks, execution } = data;
 
@@ -94,7 +103,7 @@ export function generateMarkdown(data: TurboRunData): string {
     const statusIcon =
       execution.exitCode === 0 ? '✓' : execution.exitCode === null ? '⊘' : '✗';
     const cacheIcon = cache.status === 'HIT' ? 'cached' : 'miss';
-    const escapedTaskId = taskId.replaceAll(':', '#58;');
+    const escapedTaskId = escapeMermaid(taskId);
     const safeName = `${escapedTaskId} ${duration}ms ${cacheIcon} ${statusIcon}`;
 
     lines.push(

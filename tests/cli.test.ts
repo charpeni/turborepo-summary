@@ -30,6 +30,7 @@ describe('CLI', () => {
         encoding: 'utf-8',
         stdio: 'pipe',
       });
+      fail('Expected command to exit non-zero for invalid JSON');
     } catch (error) {
       const execError = error as ExecException;
       expect(execError.stderr?.toString()).toContain('Unable to read or parse');

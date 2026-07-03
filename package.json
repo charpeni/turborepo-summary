@@ -17,7 +17,7 @@
   "license": "MIT",
   "author": "Nicolas Charpentier <nicolas.charpentier079@gmail.com>",
   "type": "module",
-  "bin": "./dist/index.js",
+  "bin": "./dist/cli.js",
   "files": [
     "LICENSE",
     "README.md",

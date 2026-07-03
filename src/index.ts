@@ -17,8 +17,14 @@ export type TurboRunData = {
   tasks: TurboTask[];
   execution: {
     command: string;
+    repoPath?: string;
     startTime?: number;
     endTime?: number;
+    success?: number;
+    failed?: number;
+    cached?: number;
+    attempted?: number;
+    exitCode?: number | null;
   };
 };
 
@@ -47,23 +53,27 @@ export function generateMarkdown(data: TurboRunData): string {
   const isRan = (task: TurboTask): task is RanTask => task.execution != null;
   const ranTasks = tasks.filter(isRan);
 
-  // Calculate metrics over tasks that actually executed
+  // Task-derived timing (fallback and per-task detail)
   const startTimes = ranTasks.map((t) => t.execution.startTime);
   const endTimes = ranTasks.map((t) => t.execution.endTime);
   const baseTime = startTimes.length ? Math.min(...startTimes) : 0;
-  const endTime = endTimes.length ? Math.max(...endTimes) : 0;
-  const totalDuration = endTime - baseTime;
-  const totalSec = (totalDuration / 1000).toFixed(2);
+  const latestEnd = endTimes.length ? Math.max(...endTimes) : 0;
 
-  const successCount = ranTasks.filter(
-    (t) => t.execution.exitCode === 0,
-  ).length;
   const failedCount = ranTasks.filter(
     (t) => t.execution.exitCode !== null && t.execution.exitCode !== 0,
   ).length;
-  const totalCount = tasks.length;
   const cacheHitCount = tasks.filter((t) => t.cache.status === 'HIT').length;
-  const cacheMissCount = tasks.filter((t) => t.cache.status === 'MISS').length;
+
+  // Run-level metrics (preferred) with task-derived fallbacks. Turbo counts
+  // cached tasks under `cached`, not `success`; total duration is wall clock.
+  const runDuration =
+    (execution.endTime ?? latestEnd) - (execution.startTime ?? baseTime);
+  const runSec = (runDuration / 1000).toFixed(2);
+  const attempted = execution.attempted ?? tasks.length;
+  const cached = execution.cached ?? cacheHitCount;
+  const failed = execution.failed ?? failedCount;
+  const executed = Math.max(0, attempted - cached);
+  const tasksOk = Math.max(0, attempted - failed);
 
   const command = execution.command || 'unknown';
 
@@ -76,12 +86,12 @@ export function generateMarkdown(data: TurboRunData): string {
   lines.push('');
   lines.push('| Metric | Value |');
   lines.push('|--------|-------|');
-  lines.push(`| **Total Duration** | ${totalSec}s (${totalDuration}ms) |`);
-  lines.push(`| **Tasks Executed** | ${totalCount} |`);
-  lines.push(`| **Successful** | ✓ ${successCount} |`);
-  lines.push(`| **Failed** | ✗ ${failedCount} |`);
-  lines.push(`| **Cache Hits** | 🎯 ${cacheHitCount} |`);
-  lines.push(`| **Cache Misses** | ⚠️ ${cacheMissCount} |`);
+  lines.push(`| **Total Duration** | ${runSec}s (${runDuration}ms) |`);
+  lines.push(`| **Tasks** | ${attempted} |`);
+  lines.push(`| **Tasks OK** | ✓ ${tasksOk} |`);
+  lines.push(`| **Cached** | 🎯 ${cached} |`);
+  lines.push(`| **Executed** | ▶ ${executed} |`);
+  lines.push(`| **Failed** | ✗ ${failed} |`);
   lines.push('');
   lines.push('## 📈 Execution Timeline');
   lines.push('');

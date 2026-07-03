@@ -19,12 +19,12 @@ describe('generateMarkdown', () => {
 
      | Metric | Value |
      |--------|-------|
-     | **Total Duration** | 0.03s (26ms) |
-     | **Tasks Executed** | 3 |
-     | **Successful** | ✓ 3 |
+     | **Total Duration** | 0.08s (83ms) |
+     | **Tasks** | 3 |
+     | **Tasks OK** | ✓ 3 |
+     | **Cached** | 🎯 3 |
+     | **Executed** | ▶ 0 |
      | **Failed** | ✗ 0 |
-     | **Cache Hits** | 🎯 3 |
-     | **Cache Misses** | ⚠️ 0 |
 
      ## 📈 Execution Timeline
 

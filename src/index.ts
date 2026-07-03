@@ -147,13 +147,14 @@ export function generateMarkdown(data: TurboRunData): string {
   lines.push('gantt');
   lines.push('    title Turbo Execution Timeline');
   lines.push('    dateFormat x');
-  lines.push('    axisFormat %S.%L');
+  lines.push('    axisFormat %M:%S.%L');
   lines.push('    section Tasks');
 
   // Generate Gantt chart entries for executed tasks (sorted by start time)
   const tasksByStartTime = [...ranTasks].sort(
     (a, b) => a.execution.startTime - b.execution.startTime,
   );
+  const ganttBase = execution.startTime ?? baseTime;
 
   for (const task of tasksByStartTime) {
     const { taskId, execution, cache } = task;
@@ -165,7 +166,7 @@ export function generateMarkdown(data: TurboRunData): string {
     const safeName = `${escapedTaskId} ${humanizeDuration(duration)} ${cacheIcon} ${statusIcon}`;
 
     lines.push(
-      `    ${safeName} : ${execution.startTime}, ${execution.endTime}`,
+      `    ${safeName} : ${execution.startTime - ganttBase}, ${execution.endTime - ganttBase}`,
     );
   }
 

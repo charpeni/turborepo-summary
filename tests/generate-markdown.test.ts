@@ -38,11 +38,11 @@ describe('generateMarkdown', () => {
      gantt
          title Turbo Execution Timeline
          dateFormat x
-         axisFormat %S.%L
+         axisFormat %M:%S.%L
          section Tasks
-         @repo/ui#35;check-types 12ms cached ✓ : 1761146561000, 1761146561012
-         web#35;check-types 13ms cached ✓ : 1761146561013, 1761146561026
-         docs#35;check-types 12ms cached ✓ : 1761146561014, 1761146561026
+         @repo/ui#35;check-types 12ms cached ✓ : 57, 69
+         web#35;check-types 13ms cached ✓ : 70, 83
+         docs#35;check-types 12ms cached ✓ : 71, 83
      \`\`\`
 
      ## 📋 Detailed Results
@@ -195,5 +195,24 @@ describe('generateMarkdown', () => {
     const markdown = generateMarkdown(data);
 
     expect(markdown).toContain('12m 34s');
+  });
+
+  it('normalizes gantt timestamps relative to run start', () => {
+    const data = {
+      execution: { command: 'turbo run build', startTime: 1000 },
+      tasks: [
+        {
+          taskId: 'web#build',
+          cache: { status: 'MISS' },
+          execution: { startTime: 1050, endTime: 1100, exitCode: 0 },
+        },
+      ],
+    } as unknown as TurboRunData;
+
+    const markdown = generateMarkdown(data);
+
+    // offsets relative to run start (1000), not raw epoch timestamps
+    expect(markdown).toContain(': 50, 100');
+    expect(markdown).not.toContain(': 1050, 1100');
   });
 });

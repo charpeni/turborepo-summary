@@ -27,6 +27,8 @@ describe('generateMarkdown', () => {
      | **Executed** | ▶ 0 |
      | **Failed** | ✗ 0 |
      | **Cache Hit Rate** | 100% (3/3) |
+     | **Time Saved by Cache** | 0ms |
+     | **Cache Sources** | 🖥️ 3 local · ☁️ 0 remote |
 
      > 🚀 **>>> FULL TURBO** — every task was a cache hit!
 
@@ -146,5 +148,35 @@ describe('generateMarkdown', () => {
     // emitted entities must not be re-escaped
     expect(markdown).not.toContain('#35;44;');
     expect(markdown).not.toContain('#35;35;');
+  });
+
+  it('surfaces cache time saved and local/remote hit sources', () => {
+    const data = {
+      execution: { command: 'turbo run build', attempted: 3, cached: 2 },
+      tasks: [
+        {
+          taskId: 'web#build',
+          cache: { status: 'HIT', source: 'LOCAL', timeSaved: 5000 },
+          execution: { startTime: 1000, endTime: 1100, exitCode: 0 },
+        },
+        {
+          taskId: 'docs#build',
+          cache: { status: 'HIT', source: 'REMOTE', timeSaved: 8000 },
+          execution: { startTime: 1000, endTime: 1050, exitCode: 0 },
+        },
+        {
+          taskId: 'api#build',
+          cache: { status: 'MISS' },
+          execution: { startTime: 1000, endTime: 3000, exitCode: 0 },
+        },
+      ],
+    } as unknown as TurboRunData;
+
+    const markdown = generateMarkdown(data);
+
+    expect(markdown).toContain('Time Saved by Cache');
+    expect(markdown).toContain('13000ms');
+    expect(markdown).toContain('local');
+    expect(markdown).toContain('remote');
   });
 });

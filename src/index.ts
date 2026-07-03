@@ -8,6 +8,10 @@ export type TurboTask = {
   };
   cache: {
     status: 'HIT' | 'MISS';
+    local?: boolean;
+    remote?: boolean;
+    source?: 'LOCAL' | 'REMOTE';
+    timeSaved?: number;
   };
 };
 
@@ -67,6 +71,16 @@ export function generateMarkdown(data: TurboRunData): string {
     (t) => t.execution.exitCode !== null && t.execution.exitCode !== 0,
   ).length;
   const cacheHitCount = tasks.filter((t) => t.cache.status === 'HIT').length;
+  const totalTimeSaved = tasks.reduce(
+    (sum, t) => sum + (t.cache.timeSaved ?? 0),
+    0,
+  );
+  const localHits = tasks.filter(
+    (t) => t.cache.status === 'HIT' && t.cache.source === 'LOCAL',
+  ).length;
+  const remoteHits = tasks.filter(
+    (t) => t.cache.status === 'HIT' && t.cache.source === 'REMOTE',
+  ).length;
 
   // Run-level metrics (preferred) with task-derived fallbacks. Turbo counts
   // cached tasks under `cached`, not `success`; total duration is wall clock.
@@ -105,6 +119,12 @@ export function generateMarkdown(data: TurboRunData): string {
   lines.push(`| **Failed** | ✗ ${failed} |`);
   const hitRate = attempted > 0 ? Math.round((cached / attempted) * 100) : 0;
   lines.push(`| **Cache Hit Rate** | ${hitRate}% (${cached}/${attempted}) |`);
+  lines.push(`| **Time Saved by Cache** | ${totalTimeSaved}ms |`);
+  if (cacheHitCount > 0) {
+    lines.push(
+      `| **Cache Sources** | 🖥️ ${localHits} local · ☁️ ${remoteHits} remote |`,
+    );
+  }
   lines.push('');
   if (attempted > 0 && cached === attempted) {
     lines.push('> 🚀 **>>> FULL TURBO** — every task was a cache hit!');

@@ -1,6 +1,14 @@
 #!/usr/bin/env node
 
-import { readFileSync, realpathSync } from 'node:fs';
+import {
+  readFileSync,
+  readdirSync,
+  statSync,
+  realpathSync,
+  writeFileSync,
+  type Stats,
+} from 'node:fs';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { Command } from 'commander';
@@ -10,14 +18,31 @@ import { generateMarkdown, type TurboRunData } from './index.js';
 export { generateMarkdown };
 export type { TurboTask, TurboRunData } from './index.js';
 
-function runReport(jsonFile: string): void {
-  let data: TurboRunData;
+const RUNS_DIR = '.turbo/runs';
 
+function readRunData(file: string): TurboRunData {
+  let fileContent: string;
+
+  if (file === '-') {
+    // Read JSON from stdin (fd 0).
+    fileContent = readFileSync(0, 'utf-8');
+  } else {
+    try {
+      fileContent = readFileSync(file, 'utf-8');
+    } catch (error) {
+      console.error(`Error: Unable to read or parse file ${file}`);
+      if (error instanceof Error) {
+        console.error(error.message);
+      }
+      process.exit(1);
+    }
+  }
+
+  let data: TurboRunData;
   try {
-    const fileContent = readFileSync(jsonFile, 'utf-8');
     data = JSON.parse(fileContent);
   } catch (error) {
-    console.error(`Error: Unable to read or parse file ${jsonFile}`);
+    console.error(`Error: Unable to parse JSON from ${file}`);
     if (error instanceof Error) {
       console.error(error.message);
     }
@@ -42,7 +67,63 @@ function runReport(jsonFile: string): void {
     process.exit(1);
   }
 
-  console.log(generateMarkdown(data));
+  return data;
+}
+
+function resolveDefaultFile(): string {
+  const runsDir = resolve(process.cwd(), RUNS_DIR);
+
+  let entries: string[];
+  try {
+    entries = readdirSync(runsDir);
+  } catch {
+    console.error(
+      `Error: No input file specified and no ${RUNS_DIR}/ directory found in ${process.cwd()}.`,
+    );
+    console.error(
+      'Provide a path to your Turbo run summary JSON file, or run a Turborepo command with --summarize first.',
+    );
+    console.error('\nExample:\n  $ npx turborepo-summary ./turbo-run.json');
+    process.exit(1);
+  }
+
+  const jsonFiles = entries
+    .filter((name) => name.endsWith('.json'))
+    .map((name) => {
+      const fullPath = resolve(runsDir, name);
+      let stat: Stats;
+      try {
+        stat = statSync(fullPath);
+      } catch {
+        return null;
+      }
+      return { path: fullPath, mtime: stat.mtimeMs };
+    })
+    .filter(
+      (entry): entry is { path: string; mtime: number } => entry !== null,
+    );
+
+  if (jsonFiles.length === 0) {
+    console.error(
+      `Error: No input file specified and no *.json files found in ${RUNS_DIR}/.`,
+    );
+    console.error(
+      'Provide a path to your Turbo run summary JSON file, or run a Turborepo command with --summarize first.',
+    );
+    console.error('\nExample:\n  $ npx turborepo-summary ./turbo-run.json');
+    process.exit(1);
+  }
+
+  jsonFiles.sort((a, b) => b.mtime - a.mtime);
+  const newest = jsonFiles[0];
+  if (!newest) {
+    // Should be unreachable — length === 0 case exits above — but keep TS happy.
+    console.error(
+      `Error: No input file specified and no usable *.json files found in ${RUNS_DIR}/.`,
+    );
+    process.exit(1);
+  }
+  return newest.path;
 }
 
 function isMainModule(): boolean {
@@ -67,26 +148,33 @@ if (isMainModule()) {
     .name('turborepo-summary')
     .description(packageJson.description)
     .version(packageJson.version)
-    .argument('<file>', 'Path to the Turbo run summary JSON file')
+    .argument(
+      '[file]',
+      'Path to the Turbo run summary JSON file, "-" for stdin, or omit to use the newest .turbo/runs/*.json',
+    )
+    .option(
+      '-o, --output <path>',
+      'Write the markdown report to a file instead of stdout',
+    )
     .showHelpAfterError('(add --help for additional information)')
-    .configureOutput({
-      outputError: (str, write) => {
-        if (str.includes('missing required argument')) {
-          write(
-            '\nError: No input file specified.\n\n' +
-              'Please provide a path to your Turborepo run summary JSON file.\n\n' +
-              'Example:\n' +
-              '  $ npx turborepo-summary ./turbo-run.json\n\n' +
-              'To generate the JSON file, run your Turborepo command with the --summarize flag:\n' +
-              '  $ turbo run build --summarize\n\n',
-          );
-        } else {
-          write(str);
+    .action((file: string | undefined, options: { output?: string }) => {
+      const inputPath = file ?? resolveDefaultFile();
+      const data = readRunData(inputPath);
+      const markdown = generateMarkdown(data);
+
+      if (options.output) {
+        try {
+          writeFileSync(options.output, markdown);
+        } catch (error) {
+          console.error(`Error: Unable to write output to ${options.output}`);
+          if (error instanceof Error) {
+            console.error(error.message);
+          }
+          process.exit(1);
         }
-      },
-    })
-    .action((file: string) => {
-      runReport(file);
+      } else {
+        process.stdout.write(markdown);
+      }
     });
 
   program.parse();

@@ -1,14 +1,17 @@
 export type TurboTask = {
   taskId: string;
-  execution: {
+  execution?: {
     startTime: number;
     endTime: number;
-    exitCode: number;
+    exitCode: number | null;
+    error?: string;
   };
   cache: {
     status: 'HIT' | 'MISS';
   };
 };
+
+type RanTask = TurboTask & { execution: NonNullable<TurboTask['execution']> };
 
 export type TurboRunData = {
   tasks: TurboTask[];
@@ -19,19 +22,45 @@ export type TurboRunData = {
   };
 };
 
+function escapeMermaid(text: string): string {
+  // Escape '#' before ':' and ',' so the '#' in the emitted entities
+  // (#58;, #44;, #35;) is not itself re-escaped.
+  return text
+    .replaceAll('#', '#35;')
+    .replaceAll(':', '#58;')
+    .replaceAll(',', '#44;');
+}
+
 export function generateMarkdown(data: TurboRunData): string {
   const { tasks, execution } = data;
 
-  // Calculate metrics
-  const startTimes = tasks.map((t) => t.execution.startTime);
-  const endTimes = tasks.map((t) => t.execution.endTime);
-  const baseTime = Math.min(...startTimes);
-  const endTime = Math.max(...endTimes);
+  if (tasks.length === 0) {
+    return [
+      '# 🔍 Turbo Run Report',
+      '',
+      `> **Command:** \`${execution.command || 'unknown'}\``,
+      '',
+      '_No tasks found in this summary (this can happen with `--filter` matching nothing)._',
+    ].join('\n');
+  }
+
+  const isRan = (task: TurboTask): task is RanTask => task.execution != null;
+  const ranTasks = tasks.filter(isRan);
+
+  // Calculate metrics over tasks that actually executed
+  const startTimes = ranTasks.map((t) => t.execution.startTime);
+  const endTimes = ranTasks.map((t) => t.execution.endTime);
+  const baseTime = startTimes.length ? Math.min(...startTimes) : 0;
+  const endTime = endTimes.length ? Math.max(...endTimes) : 0;
   const totalDuration = endTime - baseTime;
   const totalSec = (totalDuration / 1000).toFixed(2);
 
-  const successCount = tasks.filter((t) => t.execution.exitCode === 0).length;
-  const failedCount = tasks.filter((t) => t.execution.exitCode !== 0).length;
+  const successCount = ranTasks.filter(
+    (t) => t.execution.exitCode === 0,
+  ).length;
+  const failedCount = ranTasks.filter(
+    (t) => t.execution.exitCode !== null && t.execution.exitCode !== 0,
+  ).length;
   const totalCount = tasks.length;
   const cacheHitCount = tasks.filter((t) => t.cache.status === 'HIT').length;
   const cacheMissCount = tasks.filter((t) => t.cache.status === 'MISS').length;
@@ -63,17 +92,18 @@ export function generateMarkdown(data: TurboRunData): string {
   lines.push('    axisFormat %S.%L');
   lines.push('    section Tasks');
 
-  // Generate Gantt chart entries (sorted by start time)
-  const tasksByStartTime = [...tasks].sort(
+  // Generate Gantt chart entries for executed tasks (sorted by start time)
+  const tasksByStartTime = [...ranTasks].sort(
     (a, b) => a.execution.startTime - b.execution.startTime,
   );
 
   for (const task of tasksByStartTime) {
     const { taskId, execution, cache } = task;
     const duration = execution.endTime - execution.startTime;
-    const statusIcon = execution.exitCode === 0 ? '✓' : '✗';
+    const statusIcon =
+      execution.exitCode === 0 ? '✓' : execution.exitCode === null ? '⊘' : '✗';
     const cacheIcon = cache.status === 'HIT' ? 'cached' : 'miss';
-    const escapedTaskId = taskId.replaceAll(':', '#58;');
+    const escapedTaskId = escapeMermaid(taskId);
     const safeName = `${escapedTaskId} ${duration}ms ${cacheIcon} ${statusIcon}`;
 
     lines.push(
@@ -88,12 +118,36 @@ export function generateMarkdown(data: TurboRunData): string {
   lines.push('| Task | Duration | Cache | Status |');
   lines.push('|------|----------:|-------|--------|');
 
-  // Generate detailed table in execution order (sorted by start time)
-  for (const task of tasksByStartTime) {
-    const { taskId, execution, cache } = task;
-    const duration = execution.endTime - execution.startTime;
-    const status = execution.exitCode === 0 ? '✅ Success' : '❌ Failed';
+  // Detailed table: executed tasks (sorted by start time), then tasks that never ran
+  const orderedTasks: TurboTask[] = [
+    ...tasksByStartTime,
+    ...tasks.filter((t) => !t.execution),
+  ];
+
+  for (const task of orderedTasks) {
+    const { taskId, cache } = task;
     const cacheStatus = cache.status === 'HIT' ? '🎯 Hit' : '⚠️ Miss';
+
+    if (!task.execution) {
+      lines.push(`| \`${taskId}\` | — | ${cacheStatus} | ⏭ Not run |`);
+      continue;
+    }
+
+    const duration = task.execution.endTime - task.execution.startTime;
+    let status: string;
+    if (task.execution.exitCode === 0) {
+      status = '✅ Success';
+    } else if (task.execution.exitCode === null) {
+      status = '⊘ Interrupted';
+    } else {
+      status = '❌ Failed';
+      if (task.execution.error) {
+        const error = task.execution.error
+          .replaceAll('|', '\\|')
+          .replaceAll(/\r?\n/g, ' ');
+        status += ` — ${error}`;
+      }
+    }
 
     lines.push(
       `| \`${taskId}\` | ${duration}ms | ${cacheStatus} | ${status} |`,

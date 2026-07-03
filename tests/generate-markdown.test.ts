@@ -25,6 +25,9 @@ describe('generateMarkdown', () => {
      | **Cached** | 🎯 3 |
      | **Executed** | ▶ 0 |
      | **Failed** | ✗ 0 |
+     | **Cache Hit Rate** | 100% (3/3) |
+
+     > 🚀 **>>> FULL TURBO** — every task was a cache hit!
 
      ## 📈 Execution Timeline
 

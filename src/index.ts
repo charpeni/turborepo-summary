@@ -92,7 +92,13 @@ export function generateMarkdown(data: TurboRunData): string {
   lines.push(`| **Cached** | 🎯 ${cached} |`);
   lines.push(`| **Executed** | ▶ ${executed} |`);
   lines.push(`| **Failed** | ✗ ${failed} |`);
+  const hitRate = attempted > 0 ? Math.round((cached / attempted) * 100) : 0;
+  lines.push(`| **Cache Hit Rate** | ${hitRate}% (${cached}/${attempted}) |`);
   lines.push('');
+  if (attempted > 0 && cached === attempted) {
+    lines.push('> 🚀 **>>> FULL TURBO** — every task was a cache hit!');
+    lines.push('');
+  }
   lines.push('## 📈 Execution Timeline');
   lines.push('');
   lines.push('```mermaid');

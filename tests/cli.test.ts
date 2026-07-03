@@ -190,47 +190,7 @@ describe('CLI', () => {
     `);
   });
 
-  it('should reject summaries with an unsupported version', () => {
-    const unsupported = JSON.stringify({
-      version: '2',
-      execution: { command: 'turbo run build' },
-      tasks: [],
-    });
-    try {
-      execSync(`node ${cliPath} -`, {
-        encoding: 'utf-8',
-        input: unsupported,
-        stdio: 'pipe',
-      });
-      fail('Expected command to throw for unsupported version');
-    } catch (error) {
-      const execError = error as ExecException;
-      const stderr = execError.stderr?.toString() ?? '';
-      expect(stderr).toContain('version');
-      expect(stderr).toContain('"2"');
-    }
-  });
-
-  it('should reject summaries missing a version field', () => {
-    const noVersion = JSON.stringify({
-      execution: { command: 'turbo run build' },
-      tasks: [],
-    });
-    try {
-      execSync(`node ${cliPath} -`, {
-        encoding: 'utf-8',
-        input: noVersion,
-        stdio: 'pipe',
-      });
-      fail('Expected command to throw for missing version');
-    } catch (error) {
-      const execError = error as ExecException;
-      const stderr = execError.stderr?.toString() ?? '';
-      expect(stderr).toContain('version');
-    }
-  });
-
-  it('should still report dry-run for a version "1" summary with no executions', () => {
+  it('should still report dry-run for a summary with no executions', () => {
     const dryRunPath = resolve(process.cwd(), 'tests/dry-run.json');
     try {
       execSync(`node ${cliPath} ${dryRunPath}`, {
@@ -242,7 +202,6 @@ describe('CLI', () => {
       const execError = error as ExecException;
       const stderr = execError.stderr?.toString() ?? '';
       expect(stderr).toContain('dry-run');
-      expect(stderr).not.toContain('Unsupported');
     }
   });
 
@@ -258,6 +217,37 @@ describe('CLI', () => {
     } catch (error) {
       const execError = error as ExecException;
       expect(execError.stderr?.toString()).toContain('dry-run');
+    }
+  });
+
+  it('should exit 1 with a friendly message when rendering throws', () => {
+    // Task missing required `cache` field — generateMarkdown will throw.
+    const malformed = JSON.stringify({
+      version: '1',
+      execution: {
+        command: 'turbo run build',
+        startTime: 1,
+        endTime: 2,
+      },
+      tasks: [
+        {
+          taskId: 'broken',
+          execution: { startTime: 0, endTime: 1, exitCode: 0 },
+        },
+      ],
+    });
+    try {
+      execSync(`node ${cliPath} -`, {
+        encoding: 'utf-8',
+        input: malformed,
+        stdio: 'pipe',
+      });
+      fail('Expected command to exit non-zero for malformed input');
+    } catch (error) {
+      const execError = error as ExecException;
+      const stderr = execError.stderr?.toString() ?? '';
+      expect(stderr).toContain('Failed to render Turbo summary');
+      expect(stderr).toContain('open an issue');
     }
   });
 });

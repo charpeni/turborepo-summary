@@ -90,4 +90,40 @@ describe('generateMarkdown', () => {
     expect(markdown).not.toContain('Infinity');
     expect(markdown).not.toContain('NaN');
   });
+
+  it('treats null exitCode as interrupted (not failed) and surfaces errors', () => {
+    const data = {
+      execution: { command: 'turbo run build' },
+      tasks: [
+        {
+          taskId: 'web#build',
+          cache: { status: 'MISS' },
+          execution: {
+            startTime: 1000,
+            endTime: 1500,
+            exitCode: 1,
+            error: 'build failed',
+          },
+        },
+        {
+          taskId: 'docs#build',
+          cache: { status: 'MISS' },
+          execution: { startTime: 1000, endTime: 1200, exitCode: null },
+        },
+        {
+          taskId: 'api#build',
+          cache: { status: 'HIT' },
+          execution: { startTime: 1000, endTime: 1100, exitCode: 0 },
+        },
+      ],
+    } as unknown as TurboRunData;
+
+    const markdown = generateMarkdown(data);
+
+    // null exitCode is its own state, not counted as failed
+    expect(markdown).toContain('Interrupted');
+    expect(markdown).toContain('| **Failed** | ✗ 1 |');
+    // a failed task surfaces its execution.error
+    expect(markdown).toContain('build failed');
+  });
 });

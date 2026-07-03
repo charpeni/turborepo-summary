@@ -3,7 +3,8 @@ export type TurboTask = {
   execution?: {
     startTime: number;
     endTime: number;
-    exitCode: number;
+    exitCode: number | null;
+    error?: string;
   };
   cache: {
     status: 'HIT' | 'MISS';
@@ -48,7 +49,9 @@ export function generateMarkdown(data: TurboRunData): string {
   const successCount = ranTasks.filter(
     (t) => t.execution.exitCode === 0,
   ).length;
-  const failedCount = ranTasks.filter((t) => t.execution.exitCode !== 0).length;
+  const failedCount = ranTasks.filter(
+    (t) => t.execution.exitCode !== null && t.execution.exitCode !== 0,
+  ).length;
   const totalCount = tasks.length;
   const cacheHitCount = tasks.filter((t) => t.cache.status === 'HIT').length;
   const cacheMissCount = tasks.filter((t) => t.cache.status === 'MISS').length;
@@ -88,7 +91,8 @@ export function generateMarkdown(data: TurboRunData): string {
   for (const task of tasksByStartTime) {
     const { taskId, execution, cache } = task;
     const duration = execution.endTime - execution.startTime;
-    const statusIcon = execution.exitCode === 0 ? '✓' : '✗';
+    const statusIcon =
+      execution.exitCode === 0 ? '✓' : execution.exitCode === null ? '⊘' : '✗';
     const cacheIcon = cache.status === 'HIT' ? 'cached' : 'miss';
     const escapedTaskId = taskId.replaceAll(':', '#58;');
     const safeName = `${escapedTaskId} ${duration}ms ${cacheIcon} ${statusIcon}`;
@@ -121,7 +125,20 @@ export function generateMarkdown(data: TurboRunData): string {
     }
 
     const duration = task.execution.endTime - task.execution.startTime;
-    const status = task.execution.exitCode === 0 ? '✅ Success' : '❌ Failed';
+    let status: string;
+    if (task.execution.exitCode === 0) {
+      status = '✅ Success';
+    } else if (task.execution.exitCode === null) {
+      status = '⊘ Interrupted';
+    } else {
+      status = '❌ Failed';
+      if (task.execution.error) {
+        const error = task.execution.error
+          .replaceAll('|', '\\|')
+          .replaceAll(/\r?\n/g, ' ');
+        status += ` — ${error}`;
+      }
+    }
 
     lines.push(
       `| \`${taskId}\` | ${duration}ms | ${cacheStatus} | ${status} |`,

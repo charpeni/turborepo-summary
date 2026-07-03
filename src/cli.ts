@@ -56,17 +56,6 @@ function readRunData(file: string): TurboRunData {
     process.exit(1);
   }
 
-  // Turbo summaries declare their shape version. We only support "1".
-  if (data.version !== '1') {
-    console.error(
-      `Error: Unsupported Turbo summary version: ${JSON.stringify(data.version ?? null)}`,
-    );
-    console.error(
-      'turborepo-summary supports version "1" only. Check your Turbo version, or open an issue if you need newer-format support.',
-    );
-    process.exit(1);
-  }
-
   // Dry-run summaries (--dry=json) have tasks but none with execution data
   if (tasks.length > 0 && !tasks.some((task) => task.execution)) {
     console.error(
@@ -171,7 +160,21 @@ if (isMainModule()) {
     .action((file: string | undefined, options: { output?: string }) => {
       const inputPath = file ?? resolveDefaultFile();
       const data = readRunData(inputPath);
-      const markdown = generateMarkdown(data);
+
+      let markdown: string;
+      try {
+        markdown = generateMarkdown(data);
+      } catch (error) {
+        console.error(
+          `Error: Failed to render Turbo summary — ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+        console.error(
+          'Please open an issue at https://github.com/charpeni/turborepo-summary/issues',
+        );
+        process.exit(1);
+      }
 
       if (options.output) {
         try {

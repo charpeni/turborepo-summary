@@ -34,8 +34,11 @@ This tool is particularly useful for:
 ## Installation
 
 ```bash
-npx turborepo-summary .turbo/runs/[hash].json
+npx turborepo-summary
 ```
+
+> [!NOTE]
+> Requires Node >= 22.
 
 ## Usage
 
@@ -53,7 +56,21 @@ This creates a JSON file (typically in `.turbo/runs/`) containing execution data
 Then, generate a markdown report from that JSON file:
 
 ```bash
+# Explicit path
 npx turborepo-summary .turbo/runs/[hash].json
+
+# Or omit the file — the newest .turbo/runs/*.json is picked automatically
+npx turborepo-summary
+```
+
+You can also read the summary from stdin, or write the report to a file:
+
+```bash
+# Read from stdin (useful for piping)
+cat .turbo/runs/[hash].json | npx turborepo-summary -
+
+# Write to a file instead of stdout
+npx turborepo-summary --output REPORT.md
 ```
 
 > [!TIP]
@@ -62,26 +79,28 @@ npx turborepo-summary .turbo/runs/[hash].json
 > Pipe it to either your IDE (e.g., VS Code) to view it:
 >
 > ```bash
-> npx turborepo-summary .turbo/runs/[hash].json | code -
+> npx turborepo-summary | code -
 > ```
 >
 > Use a markdown terminal viewer tool, like [`glow`](https://github.com/charmbracelet/glow):
 >
 > ```bash
-> npx turborepo-summary .turbo/runs/[hash].json | glow -
+> npx turborepo-summary | glow -
 > ```
 
 ### CLI Options
 
 ```
-Usage: turborepo-summary [options] <file>
+Usage: turborepo-summary [options] [file]
 
 Arguments:
-  file           Path to the Turbo run summary JSON file
+  file                 Path to the Turbo run summary JSON file, "-" for stdin,
+                       or omit to use the newest .turbo/runs/*.json
 
 Options:
-  -V, --version  output the version number
-  -h, --help     display help for command
+  -V, --version        output the version number
+  -o, --output <path>  Write the markdown report to a file instead of stdout
+  -h, --help           display help for command
 ```
 
 ## Output

@@ -18,6 +18,9 @@
   "author": "Nicolas Charpentier <nicolas.charpentier079@gmail.com>",
   "type": "module",
   "bin": "./dist/cli.js",
+  "engines": {
+    "node": ">=22"
+  },
   "files": [
     "LICENSE",
     "README.md",

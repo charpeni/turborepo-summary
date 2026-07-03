@@ -190,6 +190,62 @@ describe('CLI', () => {
     `);
   });
 
+  it('should reject summaries with an unsupported version', () => {
+    const unsupported = JSON.stringify({
+      version: '2',
+      execution: { command: 'turbo run build' },
+      tasks: [],
+    });
+    try {
+      execSync(`node ${cliPath} -`, {
+        encoding: 'utf-8',
+        input: unsupported,
+        stdio: 'pipe',
+      });
+      fail('Expected command to throw for unsupported version');
+    } catch (error) {
+      const execError = error as ExecException;
+      const stderr = execError.stderr?.toString() ?? '';
+      expect(stderr).toContain('version');
+      expect(stderr).toContain('"2"');
+    }
+  });
+
+  it('should reject summaries missing a version field', () => {
+    const noVersion = JSON.stringify({
+      execution: { command: 'turbo run build' },
+      tasks: [],
+    });
+    try {
+      execSync(`node ${cliPath} -`, {
+        encoding: 'utf-8',
+        input: noVersion,
+        stdio: 'pipe',
+      });
+      fail('Expected command to throw for missing version');
+    } catch (error) {
+      const execError = error as ExecException;
+      const stderr = execError.stderr?.toString() ?? '';
+      expect(stderr).toContain('version');
+    }
+  });
+
+  it('should still report dry-run for a version "1" summary with no executions', () => {
+    const dryRunPath = resolve(process.cwd(), 'tests/dry-run.json');
+    try {
+      execSync(`node ${cliPath} ${dryRunPath}`, {
+        encoding: 'utf-8',
+        stdio: 'pipe',
+      });
+      fail('Expected command to exit non-zero for a dry-run summary');
+    } catch (error) {
+      const execError = error as ExecException;
+      const stderr = execError.stderr?.toString() ?? '';
+      expect(stderr).toContain('dry-run');
+      expect(stderr).not.toContain('Unsupported');
+    }
+  });
+
   it('should print a helpful message for dry-run summaries', () => {
     const dryRunPath = resolve(process.cwd(), 'tests/dry-run.json');
 

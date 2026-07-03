@@ -45,6 +45,16 @@ function escapeMermaid(text: string): string {
     .replaceAll(',', '#44;');
 }
 
+function humanizeDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60_000) {
+    const s = ms / 1000;
+    return `${Number.isInteger(s) ? s : s.toFixed(1)}s`;
+  }
+  const totalSec = Math.floor(ms / 1000);
+  return `${Math.floor(totalSec / 60)}m ${totalSec % 60}s`;
+}
+
 export function generateMarkdown(data: TurboRunData): string {
   const { tasks, execution, turboVersion, envMode, packages } = data;
 
@@ -86,7 +96,6 @@ export function generateMarkdown(data: TurboRunData): string {
   // cached tasks under `cached`, not `success`; total duration is wall clock.
   const runDuration =
     (execution.endTime ?? latestEnd) - (execution.startTime ?? baseTime);
-  const runSec = (runDuration / 1000).toFixed(2);
   const attempted = execution.attempted ?? tasks.length;
   const cached = execution.cached ?? cacheHitCount;
   const failed = execution.failed ?? failedCount;
@@ -111,7 +120,7 @@ export function generateMarkdown(data: TurboRunData): string {
   lines.push('');
   lines.push('| Metric | Value |');
   lines.push('|--------|-------|');
-  lines.push(`| **Total Duration** | ${runSec}s (${runDuration}ms) |`);
+  lines.push(`| **Total Duration** | ${humanizeDuration(runDuration)} |`);
   lines.push(`| **Tasks** | ${attempted} |`);
   lines.push(`| **Tasks OK** | ✓ ${tasksOk} |`);
   lines.push(`| **Cached** | 🎯 ${cached} |`);
@@ -119,7 +128,9 @@ export function generateMarkdown(data: TurboRunData): string {
   lines.push(`| **Failed** | ✗ ${failed} |`);
   const hitRate = attempted > 0 ? Math.round((cached / attempted) * 100) : 0;
   lines.push(`| **Cache Hit Rate** | ${hitRate}% (${cached}/${attempted}) |`);
-  lines.push(`| **Time Saved by Cache** | ${totalTimeSaved}ms |`);
+  lines.push(
+    `| **Time Saved by Cache** | ${humanizeDuration(totalTimeSaved)} |`,
+  );
   if (cacheHitCount > 0) {
     lines.push(
       `| **Cache Sources** | 🖥️ ${localHits} local · ☁️ ${remoteHits} remote |`,
@@ -151,7 +162,7 @@ export function generateMarkdown(data: TurboRunData): string {
       execution.exitCode === 0 ? '✓' : execution.exitCode === null ? '⊘' : '✗';
     const cacheIcon = cache.status === 'HIT' ? 'cached' : 'miss';
     const escapedTaskId = escapeMermaid(taskId);
-    const safeName = `${escapedTaskId} ${duration}ms ${cacheIcon} ${statusIcon}`;
+    const safeName = `${escapedTaskId} ${humanizeDuration(duration)} ${cacheIcon} ${statusIcon}`;
 
     lines.push(
       `    ${safeName} : ${execution.startTime}, ${execution.endTime}`,
@@ -197,7 +208,7 @@ export function generateMarkdown(data: TurboRunData): string {
     }
 
     lines.push(
-      `| \`${taskId}\` | ${duration}ms | ${cacheStatus} | ${status} |`,
+      `| \`${taskId}\` | ${humanizeDuration(duration)} | ${cacheStatus} | ${status} |`,
     );
   }
   lines.push('');

@@ -20,7 +20,7 @@ describe('generateMarkdown', () => {
 
      | Metric | Value |
      |--------|-------|
-     | **Total Duration** | 0.08s (83ms) |
+     | **Total Duration** | 83ms |
      | **Tasks** | 3 |
      | **Tasks OK** | ✓ 3 |
      | **Cached** | 🎯 3 |
@@ -175,8 +175,25 @@ describe('generateMarkdown', () => {
     const markdown = generateMarkdown(data);
 
     expect(markdown).toContain('Time Saved by Cache');
-    expect(markdown).toContain('13000ms');
+    expect(markdown).toContain('| **Time Saved by Cache** | 13s |');
     expect(markdown).toContain('local');
     expect(markdown).toContain('remote');
+  });
+
+  it('humanizes durations of a second or more', () => {
+    const data = {
+      execution: { command: 'turbo run build', startTime: 0, endTime: 754123 },
+      tasks: [
+        {
+          taskId: 'web#build',
+          cache: { status: 'MISS' },
+          execution: { startTime: 0, endTime: 754123, exitCode: 0 },
+        },
+      ],
+    } as unknown as TurboRunData;
+
+    const markdown = generateMarkdown(data);
+
+    expect(markdown).toContain('12m 34s');
   });
 });

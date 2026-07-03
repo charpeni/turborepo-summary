@@ -37,7 +37,8 @@ This tool is particularly useful for:
 npx turborepo-summary
 ```
 
-> Requires Node.js >= 22.
+> [!NOTE]
+> Requires Node >= 22.
 
 ## Usage
 

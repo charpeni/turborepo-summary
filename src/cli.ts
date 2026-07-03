@@ -31,6 +31,17 @@ function runReport(jsonFile: string): void {
     process.exit(1);
   }
 
+  // Dry-run summaries (--dry=json) have tasks but none with execution data
+  if (tasks.length > 0 && !tasks.some((task) => task.execution)) {
+    console.error(
+      'Error: This summary has no task execution data — it looks like a dry-run (--dry=json).',
+    );
+    console.error(
+      'turborepo-summary needs a real run. Re-run without --dry, or point it at a file from .turbo/runs/.',
+    );
+    process.exit(1);
+  }
+
   console.log(generateMarkdown(data));
 }
 

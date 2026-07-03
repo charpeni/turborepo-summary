@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { generateMarkdown } from '../src/index.js';
+import { generateMarkdown, type TurboRunData } from '../src/index.js';
 
 describe('generateMarkdown', () => {
   const summaryJsonPath = resolve(process.cwd(), 'tests/summary.json');
@@ -57,5 +57,24 @@ describe('generateMarkdown', () => {
 
      _Generated on [timestamp]_"
     `);
+  });
+
+  it('renders tasks without execution as "Not run" instead of crashing', () => {
+    const data = {
+      execution: { command: 'turbo run build' },
+      tasks: [
+        { taskId: 'web#build', cache: { status: 'MISS' } },
+        {
+          taskId: 'docs#build',
+          cache: { status: 'HIT' },
+          execution: { startTime: 1000, endTime: 1500, exitCode: 0 },
+        },
+      ],
+    } as unknown as TurboRunData;
+
+    const markdown = generateMarkdown(data);
+
+    expect(markdown).toContain('web#build');
+    expect(markdown).toContain('Not run');
   });
 });

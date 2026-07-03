@@ -1,6 +1,6 @@
 export type TurboTask = {
   taskId: string;
-  execution: {
+  execution?: {
     startTime: number;
     endTime: number;
     exitCode: number;
@@ -9,6 +9,8 @@ export type TurboTask = {
     status: 'HIT' | 'MISS';
   };
 };
+
+type RanTask = TurboTask & { execution: NonNullable<TurboTask['execution']> };
 
 export type TurboRunData = {
   tasks: TurboTask[];
@@ -22,16 +24,21 @@ export type TurboRunData = {
 export function generateMarkdown(data: TurboRunData): string {
   const { tasks, execution } = data;
 
-  // Calculate metrics
-  const startTimes = tasks.map((t) => t.execution.startTime);
-  const endTimes = tasks.map((t) => t.execution.endTime);
-  const baseTime = Math.min(...startTimes);
-  const endTime = Math.max(...endTimes);
+  const isRan = (task: TurboTask): task is RanTask => task.execution != null;
+  const ranTasks = tasks.filter(isRan);
+
+  // Calculate metrics over tasks that actually executed
+  const startTimes = ranTasks.map((t) => t.execution.startTime);
+  const endTimes = ranTasks.map((t) => t.execution.endTime);
+  const baseTime = startTimes.length ? Math.min(...startTimes) : 0;
+  const endTime = endTimes.length ? Math.max(...endTimes) : 0;
   const totalDuration = endTime - baseTime;
   const totalSec = (totalDuration / 1000).toFixed(2);
 
-  const successCount = tasks.filter((t) => t.execution.exitCode === 0).length;
-  const failedCount = tasks.filter((t) => t.execution.exitCode !== 0).length;
+  const successCount = ranTasks.filter(
+    (t) => t.execution.exitCode === 0,
+  ).length;
+  const failedCount = ranTasks.filter((t) => t.execution.exitCode !== 0).length;
   const totalCount = tasks.length;
   const cacheHitCount = tasks.filter((t) => t.cache.status === 'HIT').length;
   const cacheMissCount = tasks.filter((t) => t.cache.status === 'MISS').length;
@@ -63,8 +70,8 @@ export function generateMarkdown(data: TurboRunData): string {
   lines.push('    axisFormat %S.%L');
   lines.push('    section Tasks');
 
-  // Generate Gantt chart entries (sorted by start time)
-  const tasksByStartTime = [...tasks].sort(
+  // Generate Gantt chart entries for executed tasks (sorted by start time)
+  const tasksByStartTime = [...ranTasks].sort(
     (a, b) => a.execution.startTime - b.execution.startTime,
   );
 
@@ -88,12 +95,23 @@ export function generateMarkdown(data: TurboRunData): string {
   lines.push('| Task | Duration | Cache | Status |');
   lines.push('|------|----------:|-------|--------|');
 
-  // Generate detailed table in execution order (sorted by start time)
-  for (const task of tasksByStartTime) {
-    const { taskId, execution, cache } = task;
-    const duration = execution.endTime - execution.startTime;
-    const status = execution.exitCode === 0 ? '✅ Success' : '❌ Failed';
+  // Detailed table: executed tasks (sorted by start time), then tasks that never ran
+  const orderedTasks: TurboTask[] = [
+    ...tasksByStartTime,
+    ...tasks.filter((t) => !t.execution),
+  ];
+
+  for (const task of orderedTasks) {
+    const { taskId, cache } = task;
     const cacheStatus = cache.status === 'HIT' ? '🎯 Hit' : '⚠️ Miss';
+
+    if (!task.execution) {
+      lines.push(`| \`${taskId}\` | — | ${cacheStatus} | ⏭ Not run |`);
+      continue;
+    }
+
+    const duration = task.execution.endTime - task.execution.startTime;
+    const status = task.execution.exitCode === 0 ? '✅ Success' : '❌ Failed';
 
     lines.push(
       `| \`${taskId}\` | ${duration}ms | ${cacheStatus} | ${status} |`,

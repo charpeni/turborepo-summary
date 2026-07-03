@@ -1,0 +1,21 @@
+{
+  "version": "1",
+  "execution": {
+    "command": "turbo run build --dry=json",
+    "repoPath": "",
+    "success": 0,
+    "failed": 0,
+    "cached": 0,
+    "attempted": 0
+  },
+  "tasks": [
+    {
+      "taskId": "web#build",
+      "task": "build",
+      "package": "web",
+      "cache": { "status": "MISS" },
+      "command": "next build",
+      "directory": "apps/web"
+    }
+  ]
+}

@@ -63,4 +63,19 @@ describe('CLI', () => {
      "
     `);
   });
+
+  it('should print a helpful message for dry-run summaries', () => {
+    const dryRunPath = resolve(process.cwd(), 'tests/dry-run.json');
+
+    try {
+      execSync(`node ${cliPath} ${dryRunPath}`, {
+        encoding: 'utf-8',
+        stdio: 'pipe',
+      });
+      fail('Expected command to exit non-zero for a dry-run summary');
+    } catch (error) {
+      const execError = error as ExecException;
+      expect(execError.stderr?.toString()).toContain('dry-run');
+    }
+  });
 });

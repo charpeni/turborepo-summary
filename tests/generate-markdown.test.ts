@@ -10,27 +10,27 @@ describe('generateMarkdown', () => {
     const data = JSON.parse(readFileSync(summaryJsonPath, 'utf-8'));
     const output = generateMarkdown(data);
 
-    // Normalize the timestamp to make snapshots stable
-    const normalizedOutput = output.replace(
-      /_Generated on .+_/,
-      '_Generated on [timestamp]_',
-    );
-
-    expect(normalizedOutput).toMatchInlineSnapshot(`
+    expect(output).toMatchInlineSnapshot(`
      "# 🔍 Turbo Run Report
 
      > **Command:** \`turbo run check-types\`
+     > **Turbo:** 2.5.8 · **Env:** strict · **Packages:** 5
 
      ## 📊 Summary
 
      | Metric | Value |
      |--------|-------|
-     | **Total Duration** | 0.03s (26ms) |
-     | **Tasks Executed** | 3 |
-     | **Successful** | ✓ 3 |
+     | **Total Duration** | 83ms |
+     | **Tasks** | 3 |
+     | **Tasks OK** | ✓ 3 |
+     | **Cached** | 🎯 3 |
+     | **Executed** | ▶ 0 |
      | **Failed** | ✗ 0 |
-     | **Cache Hits** | 🎯 3 |
-     | **Cache Misses** | ⚠️ 0 |
+     | **Cache Hit Rate** | 100% (3/3) |
+     | **Time Saved by Cache** | 0ms |
+     | **Cache Sources** | 🖥️ 3 local · ☁️ 0 remote |
+
+     > 🚀 **>>> FULL TURBO** — every task was a cache hit!
 
      ## 📈 Execution Timeline
 
@@ -38,11 +38,11 @@ describe('generateMarkdown', () => {
      gantt
          title Turbo Execution Timeline
          dateFormat x
-         axisFormat %S.%L
+         axisFormat %M:%S.%L
          section Tasks
-         @repo/ui#35;check-types 12ms cached ✓ : 1761146561000, 1761146561012
-         web#35;check-types 13ms cached ✓ : 1761146561013, 1761146561026
-         docs#35;check-types 12ms cached ✓ : 1761146561014, 1761146561026
+         @repo/ui#35;check-types 12ms cached ✓ : 57, 69
+         web#35;check-types 13ms cached ✓ : 70, 83
+         docs#35;check-types 12ms cached ✓ : 71, 83
      \`\`\`
 
      ## 📋 Detailed Results
@@ -55,7 +55,7 @@ describe('generateMarkdown', () => {
 
      ---
 
-     _Generated on [timestamp]_"
+     _Run completed at 2025-10-22T15:22:41.026Z_"
     `);
   });
 
@@ -148,5 +148,95 @@ describe('generateMarkdown', () => {
     // emitted entities must not be re-escaped
     expect(markdown).not.toContain('#35;44;');
     expect(markdown).not.toContain('#35;35;');
+  });
+
+  it('surfaces cache time saved and local/remote hit sources', () => {
+    const data = {
+      execution: { command: 'turbo run build', attempted: 3, cached: 2 },
+      tasks: [
+        {
+          taskId: 'web#build',
+          cache: { status: 'HIT', source: 'LOCAL', timeSaved: 5000 },
+          execution: { startTime: 1000, endTime: 1100, exitCode: 0 },
+        },
+        {
+          taskId: 'docs#build',
+          cache: { status: 'HIT', source: 'REMOTE', timeSaved: 8000 },
+          execution: { startTime: 1000, endTime: 1050, exitCode: 0 },
+        },
+        {
+          taskId: 'api#build',
+          cache: { status: 'MISS' },
+          execution: { startTime: 1000, endTime: 3000, exitCode: 0 },
+        },
+      ],
+    } as unknown as TurboRunData;
+
+    const markdown = generateMarkdown(data);
+
+    expect(markdown).toContain('Time Saved by Cache');
+    expect(markdown).toContain('| **Time Saved by Cache** | 13s |');
+    expect(markdown).toContain('local');
+    expect(markdown).toContain('remote');
+  });
+
+  it('humanizes durations of a second or more', () => {
+    const data = {
+      execution: { command: 'turbo run build', startTime: 0, endTime: 754123 },
+      tasks: [
+        {
+          taskId: 'web#build',
+          cache: { status: 'MISS' },
+          execution: { startTime: 0, endTime: 754123, exitCode: 0 },
+        },
+      ],
+    } as unknown as TurboRunData;
+
+    const markdown = generateMarkdown(data);
+
+    expect(markdown).toContain('12m 34s');
+  });
+
+  it('normalizes gantt timestamps relative to run start', () => {
+    const data = {
+      execution: { command: 'turbo run build', startTime: 1000 },
+      tasks: [
+        {
+          taskId: 'web#build',
+          cache: { status: 'MISS' },
+          execution: { startTime: 1050, endTime: 1100, exitCode: 0 },
+        },
+      ],
+    } as unknown as TurboRunData;
+
+    const markdown = generateMarkdown(data);
+
+    // offsets relative to run start (1000), not raw epoch timestamps
+    expect(markdown).toContain(': 50, 100');
+    expect(markdown).not.toContain(': 1050, 1100');
+  });
+
+  it('includes exit code and log file for failed tasks', () => {
+    const data = {
+      execution: { command: 'turbo run build' },
+      tasks: [
+        {
+          taskId: 'web#build',
+          logFile: 'apps/web/.turbo/turbo-build.log',
+          cache: { status: 'MISS' },
+          execution: {
+            startTime: 1000,
+            endTime: 2000,
+            exitCode: 1,
+            error: 'oops',
+          },
+        },
+      ],
+    } as unknown as TurboRunData;
+
+    const markdown = generateMarkdown(data);
+
+    expect(markdown).toContain('exit 1');
+    expect(markdown).toContain('turbo-build.log');
   });
 });

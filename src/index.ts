@@ -1,10 +1,4 @@
-#!/usr/bin/env node
-
-import { readFileSync } from 'node:fs';
-
-import { Command } from 'commander';
-
-type TurboTask = {
+export type TurboTask = {
   taskId: string;
   execution: {
     startTime: number;
@@ -16,7 +10,7 @@ type TurboTask = {
   };
 };
 
-type TurboRunData = {
+export type TurboRunData = {
   tasks: TurboTask[];
   execution: {
     command: string;
@@ -25,26 +19,8 @@ type TurboRunData = {
   };
 };
 
-function generateReport(jsonFile: string) {
-  let data: TurboRunData;
-
-  try {
-    const fileContent = readFileSync(jsonFile, 'utf-8');
-    data = JSON.parse(fileContent);
-  } catch (error) {
-    console.error(`Error: Unable to read or parse file ${jsonFile}`);
-    if (error instanceof Error) {
-      console.error(error.message);
-    }
-    process.exit(1);
-  }
-
+export function generateMarkdown(data: TurboRunData): string {
   const { tasks, execution } = data;
-
-  if (!tasks || !execution) {
-    console.error('Error: Invalid Turbo run JSON format');
-    process.exit(1);
-  }
 
   // Calculate metrics
   const startTimes = tasks.map((t) => t.execution.startTime);
@@ -62,30 +38,30 @@ function generateReport(jsonFile: string) {
 
   const command = execution.command || 'unknown';
 
-  // Generate markdown output
-  console.log('# 🔍 Turbo Run Report');
-  console.log('');
-  console.log(`> **Command:** \`${command}\``);
-  console.log('');
-  console.log('## 📊 Summary');
-  console.log('');
-  console.log('| Metric | Value |');
-  console.log('|--------|-------|');
-  console.log(`| **Total Duration** | ${totalSec}s (${totalDuration}ms) |`);
-  console.log(`| **Tasks Executed** | ${totalCount} |`);
-  console.log(`| **Successful** | ✓ ${successCount} |`);
-  console.log(`| **Failed** | ✗ ${failedCount} |`);
-  console.log(`| **Cache Hits** | 🎯 ${cacheHitCount} |`);
-  console.log(`| **Cache Misses** | ⚠️ ${cacheMissCount} |`);
-  console.log('');
-  console.log('## 📈 Execution Timeline');
-  console.log('');
-  console.log('```mermaid');
-  console.log('gantt');
-  console.log('    title Turbo Execution Timeline');
-  console.log('    dateFormat x');
-  console.log('    axisFormat %S.%L');
-  console.log('    section Tasks');
+  const lines: string[] = [];
+  lines.push('# 🔍 Turbo Run Report');
+  lines.push('');
+  lines.push(`> **Command:** \`${command}\``);
+  lines.push('');
+  lines.push('## 📊 Summary');
+  lines.push('');
+  lines.push('| Metric | Value |');
+  lines.push('|--------|-------|');
+  lines.push(`| **Total Duration** | ${totalSec}s (${totalDuration}ms) |`);
+  lines.push(`| **Tasks Executed** | ${totalCount} |`);
+  lines.push(`| **Successful** | ✓ ${successCount} |`);
+  lines.push(`| **Failed** | ✗ ${failedCount} |`);
+  lines.push(`| **Cache Hits** | 🎯 ${cacheHitCount} |`);
+  lines.push(`| **Cache Misses** | ⚠️ ${cacheMissCount} |`);
+  lines.push('');
+  lines.push('## 📈 Execution Timeline');
+  lines.push('');
+  lines.push('```mermaid');
+  lines.push('gantt');
+  lines.push('    title Turbo Execution Timeline');
+  lines.push('    dateFormat x');
+  lines.push('    axisFormat %S.%L');
+  lines.push('    section Tasks');
 
   // Generate Gantt chart entries (sorted by start time)
   const tasksByStartTime = [...tasks].sort(
@@ -100,17 +76,17 @@ function generateReport(jsonFile: string) {
     const escapedTaskId = taskId.replaceAll(':', '#58;');
     const safeName = `${escapedTaskId} ${duration}ms ${cacheIcon} ${statusIcon}`;
 
-    console.log(
+    lines.push(
       `    ${safeName} : ${execution.startTime}, ${execution.endTime}`,
     );
   }
 
-  console.log('```');
-  console.log('');
-  console.log('## 📋 Detailed Results');
-  console.log('');
-  console.log('| Task | Duration | Cache | Status |');
-  console.log('|------|----------:|-------|--------|');
+  lines.push('```');
+  lines.push('');
+  lines.push('## 📋 Detailed Results');
+  lines.push('');
+  lines.push('| Task | Duration | Cache | Status |');
+  lines.push('|------|----------:|-------|--------|');
 
   // Generate detailed table in execution order (sorted by start time)
   for (const task of tasksByStartTime) {
@@ -119,46 +95,15 @@ function generateReport(jsonFile: string) {
     const status = execution.exitCode === 0 ? '✅ Success' : '❌ Failed';
     const cacheStatus = cache.status === 'HIT' ? '🎯 Hit' : '⚠️ Miss';
 
-    console.log(
+    lines.push(
       `| \`${taskId}\` | ${duration}ms | ${cacheStatus} | ${status} |`,
     );
   }
 
-  console.log('');
-  console.log('---');
-  console.log('');
-  console.log(`_Generated on ${new Date().toLocaleString('en-US')}_`);
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+  lines.push(`_Generated on ${new Date().toLocaleString('en-US')}_`);
+
+  return lines.join('\n');
 }
-
-const packageJsonPath = new URL('../package.json', import.meta.url);
-const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
-
-const program = new Command();
-
-program
-  .name('turborepo-summary')
-  .description(packageJson.description)
-  .version(packageJson.version)
-  .argument('<file>', 'Path to the Turbo run summary JSON file')
-  .showHelpAfterError('(add --help for additional information)')
-  .configureOutput({
-    outputError: (str, write) => {
-      if (str.includes('missing required argument')) {
-        write(
-          '\nError: No input file specified.\n\n' +
-            'Please provide a path to your Turborepo run summary JSON file.\n\n' +
-            'Example:\n' +
-            '  $ npx turborepo-summary ./turbo-run.json\n\n' +
-            'To generate the JSON file, run your Turborepo command with the --summarize flag:\n' +
-            '  $ turbo run build --summarize\n\n',
-        );
-      } else {
-        write(str);
-      }
-    },
-  })
-  .action((file: string) => {
-    generateReport(file);
-  });
-
-program.parse();

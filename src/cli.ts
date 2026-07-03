@@ -56,6 +56,17 @@ function readRunData(file: string): TurboRunData {
     process.exit(1);
   }
 
+  // Turbo summaries declare their shape version. We only support "1".
+  if (data.version !== '1') {
+    console.error(
+      `Error: Unsupported Turbo summary version: ${JSON.stringify(data.version ?? null)}`,
+    );
+    console.error(
+      'turborepo-summary supports version "1" only. Check your Turbo version, or open an issue if you need newer-format support.',
+    );
+    process.exit(1);
+  }
+
   // Dry-run summaries (--dry=json) have tasks but none with execution data
   if (tasks.length > 0 && !tasks.some((task) => task.execution)) {
     console.error(

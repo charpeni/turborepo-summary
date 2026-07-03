@@ -19,6 +19,7 @@ export type TurboTask = {
 type RanTask = TurboTask & { execution: NonNullable<TurboTask['execution']> };
 
 export type TurboRunData = {
+  version: string;
   tasks: TurboTask[];
   execution: {
     command: string;
@@ -34,7 +35,6 @@ export type TurboRunData = {
   turboVersion?: string;
   envMode?: string;
   packages?: string[];
-  version?: string;
 };
 
 function escapeMermaid(text: string): string {

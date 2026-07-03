@@ -215,4 +215,28 @@ describe('generateMarkdown', () => {
     expect(markdown).toContain(': 50, 100');
     expect(markdown).not.toContain(': 1050, 1100');
   });
+
+  it('includes exit code and log file for failed tasks', () => {
+    const data = {
+      execution: { command: 'turbo run build' },
+      tasks: [
+        {
+          taskId: 'web#build',
+          logFile: 'apps/web/.turbo/turbo-build.log',
+          cache: { status: 'MISS' },
+          execution: {
+            startTime: 1000,
+            endTime: 2000,
+            exitCode: 1,
+            error: 'oops',
+          },
+        },
+      ],
+    } as unknown as TurboRunData;
+
+    const markdown = generateMarkdown(data);
+
+    expect(markdown).toContain('exit 1');
+    expect(markdown).toContain('turbo-build.log');
+  });
 });

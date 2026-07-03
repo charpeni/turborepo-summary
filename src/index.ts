@@ -13,6 +13,7 @@ export type TurboTask = {
     source?: 'LOCAL' | 'REMOTE';
     timeSaved?: number;
   };
+  logFile?: string;
 };
 
 type RanTask = TurboTask & { execution: NonNullable<TurboTask['execution']> };
@@ -184,7 +185,7 @@ export function generateMarkdown(data: TurboRunData): string {
   ];
 
   for (const task of orderedTasks) {
-    const { taskId, cache } = task;
+    const { taskId, cache, logFile } = task;
     const cacheStatus = cache.status === 'HIT' ? '🎯 Hit' : '⚠️ Miss';
 
     if (!task.execution) {
@@ -199,12 +200,15 @@ export function generateMarkdown(data: TurboRunData): string {
     } else if (task.execution.exitCode === null) {
       status = '⊘ Interrupted';
     } else {
-      status = '❌ Failed';
+      status = `❌ Failed (exit ${task.execution.exitCode})`;
       if (task.execution.error) {
         const error = task.execution.error
           .replaceAll('|', '\\|')
           .replaceAll(/\r?\n/g, ' ');
         status += ` — ${error}`;
+      }
+      if (logFile) {
+        status += ` · 📄 \`${logFile}\``;
       }
     }
 

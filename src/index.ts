@@ -26,6 +26,10 @@ export type TurboRunData = {
     attempted?: number;
     exitCode?: number | null;
   };
+  turboVersion?: string;
+  envMode?: string;
+  packages?: string[];
+  version?: string;
 };
 
 function escapeMermaid(text: string): string {
@@ -38,7 +42,7 @@ function escapeMermaid(text: string): string {
 }
 
 export function generateMarkdown(data: TurboRunData): string {
-  const { tasks, execution } = data;
+  const { tasks, execution, turboVersion, envMode, packages } = data;
 
   if (tasks.length === 0) {
     return [
@@ -81,6 +85,13 @@ export function generateMarkdown(data: TurboRunData): string {
   lines.push('# 🔍 Turbo Run Report');
   lines.push('');
   lines.push(`> **Command:** \`${command}\``);
+  const metaParts: string[] = [];
+  if (turboVersion) metaParts.push(`**Turbo:** ${turboVersion}`);
+  if (envMode) metaParts.push(`**Env:** ${envMode}`);
+  if (packages?.length) metaParts.push(`**Packages:** ${packages.length}`);
+  if (metaParts.length > 0) {
+    lines.push(`> ${metaParts.join(' · ')}`);
+  }
   lines.push('');
   lines.push('## 📊 Summary');
   lines.push('');

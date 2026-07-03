@@ -14,6 +14,7 @@ describe('generateMarkdown', () => {
      "# 🔍 Turbo Run Report
 
      > **Command:** \`turbo run check-types\`
+     > **Turbo:** 2.5.8 · **Env:** strict · **Packages:** 5
 
      ## 📊 Summary
 

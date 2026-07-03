@@ -153,11 +153,14 @@ export function generateMarkdown(data: TurboRunData): string {
       `| \`${taskId}\` | ${duration}ms | ${cacheStatus} | ${status} |`,
     );
   }
-
   lines.push('');
   lines.push('---');
   lines.push('');
-  lines.push(`_Generated on ${new Date().toLocaleString('en-US')}_`);
+
+  const completedAt = execution.endTime
+    ? new Date(execution.endTime).toISOString()
+    : new Date().toISOString();
+  lines.push(`_Run completed at ${completedAt}_`);
 
   return lines.join('\n');
 }

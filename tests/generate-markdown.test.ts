@@ -10,13 +10,7 @@ describe('generateMarkdown', () => {
     const data = JSON.parse(readFileSync(summaryJsonPath, 'utf-8'));
     const output = generateMarkdown(data);
 
-    // Normalize the timestamp to make snapshots stable
-    const normalizedOutput = output.replace(
-      /_Generated on .+_/,
-      '_Generated on [timestamp]_',
-    );
-
-    expect(normalizedOutput).toMatchInlineSnapshot(`
+    expect(output).toMatchInlineSnapshot(`
      "# 🔍 Turbo Run Report
 
      > **Command:** \`turbo run check-types\`
@@ -55,7 +49,7 @@ describe('generateMarkdown', () => {
 
      ---
 
-     _Generated on [timestamp]_"
+     _Run completed at 2025-10-22T15:22:41.026Z_"
     `);
   });
 

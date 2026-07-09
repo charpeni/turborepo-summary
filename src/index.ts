@@ -1,5 +1,6 @@
 export type TurboTask = {
   taskId: string;
+  dependencies?: string[];
   execution?: {
     startTime: number;
     endTime: number;
@@ -63,7 +64,7 @@ export function generateMarkdown(data: TurboRunData): string {
     return [
       '# 🔍 Turbo Run Report',
       '',
-      `> **Command:** \`${execution.command || 'unknown'}\``,
+      `**Command:** \`${execution.command || 'unknown'}\``,
       '',
       '_No tasks found in this summary (this can happen with `--filter` matching nothing)._',
     ].join('\n');
@@ -108,13 +109,13 @@ export function generateMarkdown(data: TurboRunData): string {
   const lines: string[] = [];
   lines.push('# 🔍 Turbo Run Report');
   lines.push('');
-  lines.push(`> **Command:** \`${command}\``);
+  lines.push(`**Command:** \`${command}\``);
   const metaParts: string[] = [];
   if (turboVersion) metaParts.push(`**Turbo:** ${turboVersion}`);
   if (envMode) metaParts.push(`**Env:** ${envMode}`);
   if (packages?.length) metaParts.push(`**Packages:** ${packages.length}`);
   if (metaParts.length > 0) {
-    lines.push(`> ${metaParts.join(' · ')}`);
+    lines.push(`${metaParts.join(' · ')}`);
   }
   lines.push('');
   lines.push('## 📊 Summary');
@@ -139,7 +140,7 @@ export function generateMarkdown(data: TurboRunData): string {
   }
   lines.push('');
   if (attempted > 0 && cached === attempted) {
-    lines.push('> 🚀 **>>> FULL TURBO** — every task was a cache hit!');
+    lines.push('🚀 **>>> FULL TURBO** — every task was a cache hit!');
     lines.push('');
   }
   lines.push('## 📈 Execution Timeline');
@@ -173,47 +174,129 @@ export function generateMarkdown(data: TurboRunData): string {
 
   lines.push('```');
   lines.push('');
+
+  // ── Dependency DAG ──────────────────────────────────────────────
+  // Shows task relationships and cache patterns as a colored graph.
+  // Edges are drawn only between tasks present in the current run.
+  lines.push('## 🔗 Task Dependencies');
+  lines.push('');
+  lines.push('```mermaid');
+  lines.push('graph TD');
+
+  const taskIdToNodeId = new Map<string, string>();
+  for (const [i, task] of tasks.entries()) {
+    taskIdToNodeId.set(task.taskId, `T${i}`);
+  }
+
+  for (const task of tasks) {
+    const nodeId = taskIdToNodeId.get(task.taskId)!;
+    const escapedTaskId = escapeMermaid(task.taskId);
+    const cacheText = task.cache.status === 'HIT' ? '🎯 Hit' : '⚠️ Miss';
+    const duration = task.execution
+      ? humanizeDuration(task.execution.endTime - task.execution.startTime)
+      : '—';
+
+    let statusIcon: string;
+    let className: string;
+    if (!task.execution) {
+      statusIcon = '⏭';
+      className = 'skip';
+    } else if (task.execution.exitCode === 0) {
+      statusIcon = '✓';
+      className = task.cache.status === 'HIT' ? 'hit' : 'miss';
+    } else {
+      statusIcon = task.execution.exitCode === null ? '⊘' : '✗';
+      className = 'fail';
+    }
+
+    lines.push(
+      `    ${nodeId}["${escapedTaskId}<br/>${duration} · ${cacheText} · ${statusIcon}"]:::${className}`,
+    );
+  }
+
+  for (const task of tasks) {
+    if (!task.dependencies) continue;
+    const currentNodeId = taskIdToNodeId.get(task.taskId)!;
+    for (const dep of task.dependencies) {
+      const depNodeId = taskIdToNodeId.get(dep);
+      if (depNodeId) {
+        lines.push(`    ${depNodeId} --> ${currentNodeId}`);
+      }
+    }
+  }
+
+  lines.push('');
+  lines.push('    classDef hit fill:#d4edda,stroke:#28a745');
+  lines.push('    classDef miss fill:#cce5ff,stroke:#007bff');
+  lines.push('    classDef fail fill:#f8d7da,stroke:#dc3545');
+  lines.push('    classDef skip fill:#e9ecef,stroke:#6c757d');
+  lines.push('```');
+  lines.push('');
+
+  // ── Detailed Results (slimmed) ──────────────────────────────────
+  // Clean cache hits are hidden to reduce noise; only tasks that need
+  // investigation (misses, failures, not-run) are shown in the table.
   lines.push('## 📋 Detailed Results');
   lines.push('');
-  lines.push('| Task | Duration | Cache | Status |');
-  lines.push('|------|----------:|-------|--------|');
 
-  // Detailed table: executed tasks (sorted by start time), then tasks that never ran
   const orderedTasks: TurboTask[] = [
     ...tasksByStartTime,
     ...tasks.filter((t) => !t.execution),
   ];
 
-  for (const task of orderedTasks) {
-    const { taskId, cache, logFile } = task;
-    const cacheStatus = cache.status === 'HIT' ? '🎯 Hit' : '⚠️ Miss';
+  const isCleanHit = (task: TurboTask): boolean =>
+    task.execution != null &&
+    task.execution.exitCode === 0 &&
+    task.cache.status === 'HIT';
 
-    if (!task.execution) {
-      lines.push(`| \`${taskId}\` | — | ${cacheStatus} | ⏭ Not run |`);
-      continue;
-    }
+  const interestingTasks = orderedTasks.filter((t) => !isCleanHit(t));
+  const hiddenCount = orderedTasks.length - interestingTasks.length;
 
-    const duration = task.execution.endTime - task.execution.startTime;
-    let status: string;
-    if (task.execution.exitCode === 0) {
-      status = '✅ Success';
-    } else if (task.execution.exitCode === null) {
-      status = '⊘ Interrupted';
-    } else {
-      status = `❌ Failed (exit ${task.execution.exitCode})`;
-      if (task.execution.error) {
-        const error = task.execution.error
-          .replaceAll('|', '\\|')
-          .replaceAll(/\r?\n/g, ' ');
-        status += ` — ${error}`;
+  if (interestingTasks.length === 0) {
+    lines.push('✅ All tasks were full cache hits — nothing to investigate.');
+  } else {
+    lines.push('| Task | Duration | Cache | Status |');
+    lines.push('|------|----------:|-------|--------|');
+
+    for (const task of interestingTasks) {
+      const { taskId, cache, logFile } = task;
+      const cacheStatus = cache.status === 'HIT' ? '🎯 Hit' : '⚠️ Miss';
+
+      if (!task.execution) {
+        lines.push(`| \`${taskId}\` | — | ${cacheStatus} | ⏭ Not run |`);
+        continue;
       }
-      if (logFile) {
-        status += ` · 📄 \`${logFile}\``;
-      }
-    }
 
+      const duration = task.execution.endTime - task.execution.startTime;
+      let status: string;
+      if (task.execution.exitCode === 0) {
+        status = '✅ Success';
+      } else if (task.execution.exitCode === null) {
+        status = '⊘ Interrupted';
+      } else {
+        status = `❌ Failed (exit ${task.execution.exitCode})`;
+        if (task.execution.error) {
+          const error = task.execution.error
+            .replaceAll('|', '\\|')
+            .replaceAll(/\r?\n/g, ' ');
+          status += ` — ${error}`;
+        }
+        if (logFile) {
+          status += ` · 📄 \`${logFile}\``;
+        }
+      }
+
+      lines.push(
+        `| \`${taskId}\` | ${humanizeDuration(duration)} | ${cacheStatus} | ${status} |`,
+      );
+    }
+  }
+
+  if (hiddenCount > 0 && interestingTasks.length > 0) {
+    lines.push('');
+    const taskWord = hiddenCount === 1 ? 'task was' : 'tasks were';
     lines.push(
-      `| \`${taskId}\` | ${humanizeDuration(duration)} | ${cacheStatus} | ${status} |`,
+      `📋 ${hiddenCount} ${taskWord} full cache hits and are not shown.`,
     );
   }
   lines.push('');
@@ -221,9 +304,21 @@ export function generateMarkdown(data: TurboRunData): string {
   lines.push('');
 
   const completedAt = execution.endTime
-    ? new Date(execution.endTime).toISOString()
-    : new Date().toISOString();
-  lines.push(`_Run completed at ${completedAt}_`);
+    ? new Date(execution.endTime)
+    : new Date();
+  const dateStr = completedAt.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+  const timeStr = completedAt.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'UTC',
+  });
+  lines.push(`_Run completed at ${dateStr} ${timeStr} UTC_`);
 
   return lines.join('\n');
 }
